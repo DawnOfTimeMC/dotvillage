@@ -67,13 +67,6 @@ public class BuildingPlan {
         if (tag.contains("palettes", 9)) {
             ListTag palettesTag = tag.getList("palettes", 9);
             paletteTag = palettesTag.getList(0);
-            /*
-            int i = palettesTag.size();
-            if (i == 0) {
-                throw new IllegalStateException("No palettes");
-            } else {
-                paletteTag = palettesTag.getList(RandomSource.create().nextInt(i));
-            } */
         } else {
             paletteTag = tag.getList("palette", 10);
         }

@@ -33,7 +33,7 @@ public class DoTVHandlerCommon {
     @SubscribeEvent
     public static void finalizeSpawn(MobSpawnEvent.FinalizeSpawn event) {
         if (event.getEntity() instanceof DoTVillager villager) {
-            villager.postConstructionInit();
+            villager.onFinalizeSpawnEvent();
         }
     }
 }

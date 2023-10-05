@@ -48,8 +48,10 @@ public class DoTVillagerModel<T extends DoTVillager> extends HumanoidModel<T> {
 
     public void setupAnim(T villager, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         super.setupAnim(villager, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+        animVillagerReadingStuff(villager);
+    }
 
-        /** Villager holding building plan in hands, looking at it **/
+    private void animVillagerReadingStuff(T villager) {
         if (villager.isReading()) {
             if (!villager.isLeftHanded()) {
                 this.rightArm.xRot = -1.65F;

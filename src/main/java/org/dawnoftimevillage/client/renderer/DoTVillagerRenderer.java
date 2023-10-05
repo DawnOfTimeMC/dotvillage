@@ -17,11 +17,12 @@ import org.dawnoftimevillage.world.entity.DoTVillager;
 
 @OnlyIn(Dist.CLIENT)
 public class DoTVillagerRenderer extends HumanoidMobRenderer<DoTVillager, DoTVillagerModel<DoTVillager>> {
-    private static final ResourceLocation DOT_VILLAGER_BASE_SKIN = DoTVUtils.resource("textures/entity/dot_villager/dot_villager_base.png");
+    private static final ResourceLocation DOT_VILLAGER_NAKED_SKIN = DoTVUtils.resource("textures/entity/dot_villager/dot_villager_base.png");
 
     public DoTVillagerRenderer(EntityRendererProvider.Context context) {
         super(context, new DoTVillagerModel<>(context.bakeLayer(DoTVillagerModel.LAYER_LOCATION)), 0.5F);
         this.addLayer(new DoTVillagerExtraLayer<>(this));
+        // TODO : make an armor that fit well the villager body, especially the head
         this.addLayer(new HumanoidArmorLayer<>(this, new HumanoidArmorModel<>(context.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)), new HumanoidArmorModel<>(context.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)), context.getModelManager()));
         //this.addLayer(new CrossedArmsItemLayer<>(this, pContext.getItemInHandRenderer()));
     }
@@ -42,5 +43,5 @@ public class DoTVillagerRenderer extends HumanoidMobRenderer<DoTVillager, DoTVil
         matrixStack.scale(f, f, f);
     }
 
-    public ResourceLocation getTextureLocation(DoTVillager villager) {return DOT_VILLAGER_BASE_SKIN;}
+    public ResourceLocation getTextureLocation(DoTVillager villager) {return DOT_VILLAGER_NAKED_SKIN;}
 }

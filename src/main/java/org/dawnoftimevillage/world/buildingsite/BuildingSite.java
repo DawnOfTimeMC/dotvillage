@@ -2,10 +2,17 @@ package org.dawnoftimevillage.world.buildingsite;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Clearable;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
@@ -13,13 +20,16 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.dawnoftimevillage.util.DoTVUtils;
+
+import java.util.Optional;
 
 public class BuildingSite {
     private final ServerLevel level;
     private String name;
     private final BuildingPlan buildingPlan;
-    private int progression;
+    private int nextBlockToBuildIndex; // AKA construction progress
     private boolean completed;
     private BuildingSiteSettings settings;
 
@@ -27,12 +37,7 @@ public class BuildingSite {
         this.level = level;
         this.name = name;
         this.buildingPlan = BuildingPlan.createFromResource(structureNbtFile, this.level.getServer().getResourceManager());
-        if (this.buildingPlan == null) {
-            System.out.println("FAILED CONSTRUCTING PLAN");
-        } else {
-            System.out.println("SUCCESS CONSTRUCTING PLAN");
-        }
-        this.progression = 0;
+        this.nextBlockToBuildIndex = 0;
         this.settings = settings;
     }
 
@@ -40,12 +45,7 @@ public class BuildingSite {
         this.level = level;
         this.name = compoundTag.getString("Name");
         this.buildingPlan = BuildingPlan.createFromResource(DoTVUtils.resource(compoundTag.getString("Structure")), level.getServer().getResourceManager());
-        if (this.buildingPlan == null) {
-            System.out.println("NBT : FAILED CONSTRUCTING PLAN");
-        } else {
-            System.out.println("NBT : SUCCESS CONSTRUCTING PLAN");
-        }
-        this.progression = compoundTag.getInt("Progression");
+        this.nextBlockToBuildIndex = compoundTag.getInt("Progression");
         BlockPos buildPos = new BlockPos(compoundTag.getInt("BuildX"), compoundTag.getInt("BuildY"), compoundTag.getInt("BuildZ"));
         BuildingSiteSettings settings = new BuildingSiteSettings(buildPos)
                 .rotation(Rotation.valueOf(compoundTag.getString("Rotation").toUpperCase()))
@@ -56,7 +56,7 @@ public class BuildingSite {
     public CompoundTag save(CompoundTag tag) {
         tag.putString("Name", this.name);
         tag.putString("Structure", this.buildingPlan.getStructure().getPath());
-        tag.putInt("Progression", this.progression);
+        tag.putInt("Progression", this.nextBlockToBuildIndex);
         tag.putInt("BuildX", this.settings.getPosition().getX());
         tag.putInt("BuildY", this.settings.getPosition().getY());
         tag.putInt("BuildZ", this.settings.getPosition().getZ());
@@ -66,19 +66,20 @@ public class BuildingSite {
     }
 
     public boolean buildNextBlock() {
-        return buildBlock(this.progression);
+        return buildBlock(this.nextBlockToBuildIndex);
     }
 
     private boolean buildBlock(int index) {
         if (!this.completed && index < this.buildingPlan.getBlocksQuantity()) {
+            BuildingSitesManager.get(level).setDirty();
             BlockPos pos = this.buildingPlan.getBlockPos(index);
             BlockState state = this.buildingPlan.getBlockState(index);
-            CompoundTag tag = this.buildingPlan.getBlockNBT(index);
+            CompoundTag nbt = this.buildingPlan.getBlockNBT(index);
 
-            pos = BuildingSiteUtils.transformBlockPos(pos, this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).offset(this.settings.getPosition());
-            state = BuildingSiteUtils.transformBlockState(state, this.settings.getMirror(), this.settings.getRotation());
+            pos = ConstructionUtils.transformBlockPos(pos, this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).offset(this.settings.getPosition());
+            state = ConstructionUtils.transformBlockState(state, this.settings.getMirror(), this.settings.getRotation());
 
-            if (tag != null) {
+            if (nbt != null) {
                 BlockEntity blockentity = this.level.getBlockEntity(pos);
                 Clearable.tryClear(blockentity);
                 this.level.setBlock(pos, Blocks.BARRIER.defaultBlockState(), 20);
@@ -87,50 +88,83 @@ public class BuildingSite {
             boolean placed = this.level.setBlock(pos, state, 2);
 
             if (placed) {
-                if (tag != null) {
+                if (nbt != null) {
                     BlockEntity blockEntity = this.level.getBlockEntity(pos);
                     if (blockEntity != null) {
                         if (blockEntity instanceof RandomizableContainerBlockEntity) {
-                            tag.putLong("LootTableSeed", RandomSource.create().nextLong());
+                            nbt.putLong("LootTableSeed", RandomSource.create().nextLong());
                         }
 
-                        blockEntity.load(tag);
+                        blockEntity.load(nbt);
                     }
                 }
 
             }
             if (!isLastBlockToBuild(index)) {
-                ++this.progression;
+                ++this.nextBlockToBuildIndex;
             } else {
+                placeEntities();
                 this.completed = true;
+                BuildingSitesManager.get(level).notifyBuildingSiteCompleted(this);
             }
             return placed;
         }
         return false;
     }
 
+    private void placeEntities() {
+        for(BuildingPlan.EntityInfo entityInfo : this.buildingPlan.getEntities()) {
+            Vec3 entityPos = ConstructionUtils.transformEntityPos(entityInfo.pos(), this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).add(Vec3.atLowerCornerOf(this.settings.getPosition()));
+            //BlockPos blockPos = ConstructionUtils.transformBlockPos(entityInfo.blockPos(), this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).offset(this.settings.getPosition());
+            CompoundTag nbt = entityInfo.nbt().copy();
+            ListTag entityPosTag = new ListTag();
+            entityPosTag.add(DoubleTag.valueOf(entityPos.x));
+            entityPosTag.add(DoubleTag.valueOf(entityPos.y));
+            entityPosTag.add(DoubleTag.valueOf(entityPos.z));
+            nbt.put("Pos", entityPosTag);
+            nbt.remove("UUID");
+            createEntityIgnoreException(level, nbt).ifPresent((entity) -> {
+                float f = entity.rotate(this.settings.getRotation());
+                f += entity.mirror(this.settings.getMirror()) - entity.getYRot();
+                entity.moveTo(entityPos.x, entityPos.y, entityPos.z, f, entity.getXRot());
+                if (entity instanceof Mob mob) {
+                    mob.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(entityPos)), MobSpawnType.STRUCTURE,null, nbt);
+                }
+                level.addFreshEntityWithPassengers(entity);
+            });
+        }
+    }
+
+    private static Optional<Entity> createEntityIgnoreException(ServerLevelAccessor level, CompoundTag tag) {
+        try {
+            return EntityType.create(tag, level.getLevel());
+        } catch (Exception exception) {
+            return Optional.empty();
+        }
+    }
+
     public Block nextBlock() {
-        return this.buildingPlan.getBlock(this.progression);
+        return this.buildingPlan.getBlock(this.nextBlockToBuildIndex);
     }
 
     public BlockState nextBlockState() {
-        return BuildingSiteUtils.transformBlockState(this.buildingPlan.getBlockState(this.progression), this.settings.getMirror(), this.settings.getRotation());
+        return ConstructionUtils.transformBlockState(this.buildingPlan.getBlockState(this.nextBlockToBuildIndex), this.settings.getMirror(), this.settings.getRotation());
     }
 
     public BlockPos nextBlockPos() {
-        return BuildingSiteUtils.transformBlockPos(this.buildingPlan.getBlockPos(this.progression), this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).offset(this.settings.getPosition());
+        return ConstructionUtils.transformBlockPos(this.buildingPlan.getBlockPos(this.nextBlockToBuildIndex), this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).offset(this.settings.getPosition());
     }
 
     public Block lastBlockBuilt() {
-        return this.buildingPlan.getBlock(this.progression - 1);
+        return this.buildingPlan.getBlock(this.nextBlockToBuildIndex - 1);
     }
 
     public BlockPos lastBlockPos() {
-        return BuildingSiteUtils.transformBlockPos(this.buildingPlan.getBlockPos(this.progression - 1), this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).offset(this.settings.getPosition());
+        return ConstructionUtils.transformBlockPos(this.buildingPlan.getBlockPos(this.nextBlockToBuildIndex - 1), this.settings.getMirror(), this.settings.getRotation(), this.settings.getRotationPivot()).offset(this.settings.getPosition());
     }
 
     public BlockState lastBlockState() {
-        return BuildingSiteUtils.transformBlockState(this.buildingPlan.getBlockState(this.progression - 1), this.settings.getMirror(), this.settings.getRotation());
+        return ConstructionUtils.transformBlockState(this.buildingPlan.getBlockState(this.nextBlockToBuildIndex - 1), this.settings.getMirror(), this.settings.getRotation());
     }
 
     private boolean isLastBlockToBuild(int pIndex) {
@@ -145,7 +179,7 @@ public class BuildingSite {
         return this.settings.getPosition();
     }
 
-    public int getProgression() {return this.progression;}
+    public int getNextBlockToBuildIndex() {return this.nextBlockToBuildIndex;}
 
     public boolean isCompleted() {return this.completed;}
 
@@ -153,5 +187,5 @@ public class BuildingSite {
 
     public String getName() {return this.name;}
 
-    public void setProgression(int progression) {this.progression = progression;}
+    public void setNextBlockToBuildIndex(int nextBlockToBuildIndex) {this.nextBlockToBuildIndex = nextBlockToBuildIndex;}
 }

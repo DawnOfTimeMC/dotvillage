@@ -20,29 +20,27 @@ public class DoTVillagerExtraLayer<T extends DoTVillager, M extends DoTVillagerM
     public void render(PoseStack poseStack, MultiBufferSource buffer, int packedLight, T villager, float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw, float headPitch) {
         if (!villager.isInvisible()) {
             M model = getParentModel();
-            DoTVillagerCulture culture = villager.getCulture();
-            DoTVillagerProfession profession = villager.getProfession();
+            renderCultureClothes(model, poseStack, buffer, packedLight, villager);
+            renderProfessionClothes(model, poseStack, buffer, packedLight, villager);
+        }
+    }
 
-            /** Culture **/
-            String path = "textures/entity/dot_villager/culture/dot_villager_" + culture.toString() + ".png";
+    private void renderCultureClothes(M model, PoseStack poseStack, MultiBufferSource buffer, int packedLight, T villager) {
+        DoTVillagerCulture culture = villager.getCulture();
+        String path = "textures/entity/dot_villager/culture/dot_villager_" + culture.toString() + ".png";
+        ResourceLocation resourceLocation = DoTVUtils.resource(path);
+        renderColoredCutoutModel(model, resourceLocation, poseStack, buffer, packedLight, villager, 1.0F, 1.0F, 1.0F);
+    }
+
+    private void renderProfessionClothes(M model, PoseStack poseStack, MultiBufferSource buffer, int packedLight, T villager) {
+        DoTVillagerProfession profession = villager.getProfession();
+        if (profession != DoTVillagerProfession.UNEMPLOYED) {
+            String path = "textures/entity/dot_villager/profession/dot_villager_" + profession.toString() + ".png";
             ResourceLocation resourceLocation = DoTVUtils.resource(path);
             renderColoredCutoutModel(model, resourceLocation, poseStack, buffer, packedLight, villager, 1.0F, 1.0F, 1.0F);
-
-            /** Profession **/
-            if (profession != DoTVillagerProfession.UNEMPLOYED) {
-                path = "textures/entity/dot_villager/profession/dot_villager_" + profession.toString() + ".png";
-                resourceLocation = DoTVUtils.resource(path);
-                renderColoredCutoutModel(model, resourceLocation, poseStack, buffer, packedLight, villager, 1.0F, 1.0F, 1.0F);
-            }
-
-            /** Level **/
-            /*
-            if(profession != AovVillagerProfession.NITWIT) {
-                path = "textures/entity/aov_villager/profession_level/aov_villager_" + villagerLevel.toString() + ".png";
-                ressourceLocation = ModUtils.resource(path);
-                renderColoredCutoutModel(model, ressourceLocation, pPoseStack, pBuffer, pPackedLight, pLivingEntity, 1.0F, 1.0F, 1.0F);
-            }
-            */
         }
+    }
+
+    private void renderXpLevel(M model, PoseStack poseStack, MultiBufferSource buffer, int packedLight, T villager) {
     }
 }

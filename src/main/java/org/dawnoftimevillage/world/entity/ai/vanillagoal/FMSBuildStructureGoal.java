@@ -17,10 +17,10 @@ import net.minecraft.world.phys.Vec3;
 import org.dawnoftimevillage.command.BuildingSiteCommand;
 import org.dawnoftimevillage.world.buildingsite.BuildingSite;
 import org.dawnoftimevillage.world.buildingsite.BuildingSitesManager;
+import org.dawnoftimevillage.world.entity.AdminOrder;
 import org.dawnoftimevillage.world.entity.DoTVillager;
 import org.dawnoftimevillage.world.entity.ai.systems.statemachine.State;
 import org.dawnoftimevillage.world.entity.ai.systems.statemachine.StateMachine;
-import org.dawnoftimevillage.world.entity.workorder.BuildStructureWorkOrder;
 
 import java.util.EnumSet;
 
@@ -30,7 +30,7 @@ public class FMSBuildStructureGoal extends Goal {
     public static final double MAX_REACH_DIST = 16D; // Maximum distance to be able to place a block at a given position
     public static final int INTERVAL_BETWEEN_PLACES = reducedTickDelay(6);
     private final DoTVillager builder;
-    private BuildingSite constructionSite;
+    private BuildingSite buildingSite;
     private StateMachine stateMachine;
     /** Ticks between each attempt to place a block.
      *  During this time, the builder try to go to the next block position
@@ -39,7 +39,7 @@ public class FMSBuildStructureGoal extends Goal {
      *  In this case, the cooldown does not reset until the builder succeed to place the block.
      **/
     private int placeAttemptCooldown;
-    /** Ticks before the builder will stop building and simulate looking at the construction plan **/
+    /** Ticks before the builder will stop building and simulate looking at the building plan **/
     private int nextPlanCheckCooldown;
     /** Ticks before the builder will stop looking at the plan and continue building */
     private int stopCheckingPlanCooldown;
@@ -54,23 +54,30 @@ public class FMSBuildStructureGoal extends Goal {
     }
 
     public boolean canUse() {
-        return this.builder.hasWorkOrder() && (this.builder.getWorkOrder() instanceof BuildStructureWorkOrder);
+        return builderHasAdminOrderToBuild();
+    }
+
+    private boolean builderHasAdminOrderToBuild() {
+        if (this.builder.hasAdminOrder() && (this.builder.getAdminOrder() instanceof AdminOrder.BuildOrder order)) {
+            return ((order.getRequestedSite() != null ) && BuildingSitesManager.get((ServerLevel)this.builder.getLevel()).containsSite(order.getRequestedSite()));
+        }
+        return false;
     }
 
     public boolean canContinueToUse() {
-        return !this.constructionSite.isCompleted();
+        return (!this.buildingSite.isCompleted()) && builderHasAdminOrderToBuild();
     }
 
     public void start() {
-        setConstructionSite();
+        setBuildingSite();
         buildStateMachine();
         /** Very first plan lookup duration **/
         this.stopCheckingPlanCooldown =  this.builder.getRandom().nextInt(adjustedTickDelay(20 * 2), adjustedTickDelay(20 * 6));
         this.builder.getNavigation().setMaxVisitedNodesMultiplier(10.0F);
     }
 
-    private void setConstructionSite() {
-        this.constructionSite = ((BuildStructureWorkOrder)this.builder.getWorkOrder()).getRequestedSite();
+    private void setBuildingSite() {
+        this.buildingSite = ((AdminOrder.BuildOrder)this.builder.getAdminOrder()).getRequestedSite();
     }
 
     public void reset() {
@@ -81,14 +88,12 @@ public class FMSBuildStructureGoal extends Goal {
     }
 
     public void stop() {
-        BuildingSitesManager.get((ServerLevel)this.builder.getLevel()).onConstructionSiteCompleted(this.constructionSite);
-        this.constructionSite = null;
-        ((BuildStructureWorkOrder)this.builder.getWorkOrder()).notifyFinished();
-        this.builder.setWorkOrder(null);
+        this.buildingSite = null;
+        this.builder.setAdminOrder(null);
         this.builder.getNavigation().resetMaxVisitedNodesMultiplier();
         this.builder.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         this.builder.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
-        this.builder.playSound(SoundEvents.EVOKER_PREPARE_WOLOLO,2.0F,0.9F);
+        this.builder.playSound(SoundEvents.VILLAGER_CELEBRATE,2.0F,0.9F);
     }
 
     private void buildStateMachine() {
@@ -100,10 +105,10 @@ public class FMSBuildStructureGoal extends Goal {
                 .withExitCode(this::stopCheckingBuildingPlan);
 
         this.stateMachine = StateMachine.create("build_structure", 3, goToSite)
-                .addState(goToSite)
+                .addState(prepareToPlace)
                 .addState(placeBlock)
                 .addState(checkBuildingPlan)
-                .addTransition(goToSite, checkBuildingPlan, () -> this.builder.distanceToSqr(this.constructionSite.getLocation().getX(), this.constructionSite.getLocation().getY(), this.constructionSite.getLocation().getZ()) <= 10)
+                .addTransition(goToSite, checkBuildingPlan, () -> this.builder.distanceToSqr(this.buildingSite.getLocation().getX(), this.buildingSite.getLocation().getY(), this.buildingSite.getLocation().getZ()) <= 20)
                 .addTransition(placeBlock, prepareToPlace, () -> this.successPlacingLastBlock)
                 .addTransition(checkBuildingPlan, prepareToPlace, () -> this.stopCheckingPlanCooldown <= 0)
                 .addTransition(prepareToPlace, placeBlock, () -> (this.placeAttemptCooldown <= 0) && (closeEnoughToBuild() || (this.motionLessTicks >= 5)))
@@ -111,7 +116,7 @@ public class FMSBuildStructureGoal extends Goal {
     }
 
     public void tick() {
-        if (!this.constructionSite.isCompleted()) {
+        if (!this.buildingSite.isCompleted()) {
             if (BuildingSiteCommand.showDebugInfo) {
                 showDebugInfo();
             }
@@ -120,12 +125,12 @@ public class FMSBuildStructureGoal extends Goal {
     }
 
     private void goToSite() {
-        this.builder.getNavigation().moveTo(this.constructionSite.getLocation().getX(), this.constructionSite.getLocation().getY(), this.constructionSite.getLocation().getZ(), this.builder.getAttributeValue(Attributes.MOVEMENT_SPEED));
+        this.builder.getNavigation().moveTo(this.buildingSite.getLocation().getX(), this.buildingSite.getLocation().getY(), this.buildingSite.getLocation().getZ(), this.builder.getAttributeValue(Attributes.MOVEMENT_SPEED));
     }
 
     private void prepareToPlace() {
         if (this.placeAttemptCooldown <= (INTERVAL_BETWEEN_PLACES / 2)) {
-            this.builder.setItemInHand(InteractionHand.MAIN_HAND, this.constructionSite.nextBlock().asItem().getDefaultInstance());
+            this.builder.setItemInHand(InteractionHand.MAIN_HAND, this.buildingSite.nextBlock().asItem().getDefaultInstance());
         }
         lookAtNextBuildPos();
         moveToNextBuildPos();
@@ -142,10 +147,10 @@ public class FMSBuildStructureGoal extends Goal {
         lookAtNextBuildPos();
         boolean blockingHimself = this.builder.blockPosition().equals(getNextBuildPos());
         if (!blockingHimself || (blockingHimself && !this.builder.getLevel().getBlockState(this.builder.blockPosition().above().above()).isAir())) {
-            if (this.constructionSite.buildNextBlock()) {
+            if (this.buildingSite.buildNextBlock()) {
                 this.builder.swing(InteractionHand.MAIN_HAND);
-                this.builder.getLevel().playSound(null, this.constructionSite.lastBlockPos(), this.constructionSite.lastBlockBuilt().getSoundType(this.constructionSite.lastBlockState(), this.builder.getLevel(), this.constructionSite.lastBlockPos(), this.builder).getPlaceSound(), SoundSource.BLOCKS, 1.0F, 1.0F);
-                if (!this.constructionSite.isCompleted() && (this.constructionSite.nextBlock() != this.constructionSite.lastBlockBuilt())) {
+                this.builder.getLevel().playSound(null, this.buildingSite.lastBlockPos(), this.buildingSite.lastBlockBuilt().getSoundType(this.buildingSite.lastBlockState(), this.builder.getLevel(), this.buildingSite.lastBlockPos(), this.builder).getPlaceSound(), SoundSource.BLOCKS, 1.0F, 1.0F);
+                if (!this.buildingSite.isCompleted() && (this.buildingSite.nextBlock() != this.buildingSite.lastBlockBuilt())) {
                     this.builder.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                 }
                 --this.nextPlanCheckCooldown;
@@ -166,7 +171,7 @@ public class FMSBuildStructureGoal extends Goal {
     }
 
     private BlockPos getNextBuildPos() {
-        return this.constructionSite.nextBlockPos();
+        return this.buildingSite.nextBlockPos();
     }
 
     private void lookAtNextBuildPos() {
@@ -186,9 +191,9 @@ public class FMSBuildStructureGoal extends Goal {
     }
 
     private boolean closeEnoughToBuild() {
-        int x = this.constructionSite.nextBlockPos().getX();
-        int y = this.constructionSite.nextBlockPos().getY();
-        int z = this.constructionSite.nextBlockPos().getZ();
+        int x = this.buildingSite.nextBlockPos().getX();
+        int y = this.buildingSite.nextBlockPos().getY();
+        int z = this.buildingSite.nextBlockPos().getZ();
         return BuildingSiteCommand.superBuilder || this.builder.distanceToSqr(x, y, z) <= MAX_REACH_DIST;
     }
 
@@ -216,12 +221,12 @@ public class FMSBuildStructureGoal extends Goal {
         Player player = builder.getLevel().getNearestPlayer(builder, 30D);
         if (player != null) {
             player.sendSystemMessage(
-            Component.literal("Done : " + constructionSite.isCompleted()).withStyle(ChatFormatting.GOLD).append(
-            Component.literal(" | Block : " + constructionSite.getProgression() + "/" + constructionSite.getBlocksQuantity()).withStyle(ChatFormatting.BLUE).append(
-            Component.literal(" | Next : " + BuiltInRegistries.BLOCK.getKey(constructionSite.nextBlock()) + ", " +
-            constructionSite.nextBlockPos().getX() + " " +
-            constructionSite.nextBlockPos().getY() + " " +
-            constructionSite.nextBlockPos().getZ()).withStyle(ChatFormatting.AQUA))));
+            Component.literal("Done : " + buildingSite.isCompleted()).withStyle(ChatFormatting.GOLD).append(
+            Component.literal(" | Block : " + buildingSite.getNextBlockToBuildIndex() + "/" + buildingSite.getBlocksQuantity()).withStyle(ChatFormatting.BLUE).append(
+            Component.literal(" | Next : " + BuiltInRegistries.BLOCK.getKey(buildingSite.nextBlock()) + ", " +
+            buildingSite.nextBlockPos().getX() + " " +
+            buildingSite.nextBlockPos().getY() + " " +
+            buildingSite.nextBlockPos().getZ()).withStyle(ChatFormatting.AQUA))));
 
             player.displayClientMessage(
             Component.literal(stateMachine.getCurrentState().getName() + " | ").withStyle(ChatFormatting.DARK_GREEN).append(

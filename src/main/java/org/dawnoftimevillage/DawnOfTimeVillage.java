@@ -4,6 +4,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.dawnoftimevillage.registry.DoTVEntitiesRegistry;
+import org.dawnoftimevillage.registry.DoTVStructuresRegistry;
 
 @Mod(DawnOfTimeVillage.MOD_ID)
 public class DawnOfTimeVillage {
@@ -13,6 +14,8 @@ public class DawnOfTimeVillage {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         DoTVEntitiesRegistry.ENTITY_TYPES.register(modEventBus);
+        DoTVStructuresRegistry.STRUCTURE_TYPES.register(modEventBus);
+        DoTVStructuresRegistry.STRUCTURE_PIECES.register(modEventBus);
 
         // Mod bus common events
         modEventBus.addListener(DoTVHandlerCommon::commonSetup);

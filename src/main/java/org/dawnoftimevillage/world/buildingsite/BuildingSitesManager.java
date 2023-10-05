@@ -39,8 +39,8 @@ public class BuildingSitesManager extends SavedData {
         }
     }
 
-    public void onConstructionSiteCompleted(BuildingSite site) {
-        removeSite(site);
+    public boolean containsSite(BuildingSite site) {
+        return this.sites.contains(site);
     }
 
     public BuildingSite getSiteByName(String name) {
@@ -50,6 +50,51 @@ public class BuildingSitesManager extends SavedData {
             }
         }
         return null;
+    }
+
+    public List<String> getExistentSitesNames() {
+        List<String> names = Lists.newArrayList();
+        for (BuildingSite site : this.sites) {
+            names.add(site.getName());
+        }
+        return names;
+    }
+
+    public boolean siteNameAlreadyTaken(String siteToCheck) {
+        for (BuildingSite site : getSites()) {
+            if (site.getName().equals(siteToCheck)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean addSite(ServerLevel level, String name, ResourceLocation structureNbtFile, BuildingSiteSettings settings) {
+        if (!siteNameAlreadyTaken(name)) {
+            BuildingSite site = new BuildingSite(level, name, structureNbtFile, settings);
+            if (this.sites.add(site)) {
+                setDirty();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void addSite(ServerLevel level, CompoundTag tag) {
+        BuildingSite site = new BuildingSite(level, tag);
+        if (!this.sites.contains(site)) {
+            this.sites.add(site);
+        }
+        setDirty();
+    }
+
+    public void notifyBuildingSiteCompleted(BuildingSite site) {
+        removeSite(site);
+    }
+
+    public void removeSite(BuildingSite site) {
+        this.sites.remove(site);
+        setDirty();
     }
 
     public CompoundTag save(CompoundTag tag) {
@@ -62,27 +107,6 @@ public class BuildingSitesManager extends SavedData {
 
         tag.put("BuildingSites", listtag);
         return tag;
-    }
-
-    public void addSite(ServerLevel level, String name, ResourceLocation structureNbtFile, BuildingSiteSettings settings) {
-        BuildingSite site = new BuildingSite(level, name, structureNbtFile, settings);
-        if (!this.sites.contains(site)) {
-            this.sites.add(site);
-        }
-        setDirty();
-    }
-
-    public void addSite(ServerLevel level, CompoundTag tag) {
-        BuildingSite site = new BuildingSite(level, tag);
-        if (!this.sites.contains(site)) {
-            this.sites.add(site);
-        }
-        setDirty();
-    }
-
-    public void removeSite(BuildingSite site) {
-        this.sites.remove(site);
-        setDirty();
     }
 
     public List<BuildingSite> getSites() {return sites;}

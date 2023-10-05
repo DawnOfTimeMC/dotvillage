@@ -1,7 +1,6 @@
 package org.dawnoftimevillage.world.entity;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -27,11 +26,10 @@ import net.minecraft.world.entity.monster.Witch;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.dawnoftimevillage.registry.DoTVEntitiesRegistry;
-import org.dawnoftimevillage.trade.TraderData;
 import org.dawnoftimevillage.world.building.Building;
+import org.dawnoftimevillage.world.buildingsite.BuildingSitesManager;
 import org.dawnoftimevillage.world.entity.ai.vanillagoal.FMSBuildStructureGoal;
-import org.dawnoftimevillage.world.entity.workorder.BuildStructureWorkOrder;
-import org.dawnoftimevillage.world.entity.workorder.WorkOrder;
+import org.dawnoftimevillage.world.trade.TraderData;
 import org.dawnoftimevillage.world.village.Village;
 import org.slf4j.Logger;
 
@@ -46,7 +44,7 @@ public class DoTVillager extends AgeableMob {
     private Building house;
     private Player lastInteractingPlayer;
     private String currentActionDescription;
-    private WorkOrder workOrder;
+    private AdminOrder adminOrder;
 
     public DoTVillager(EntityType<DoTVillager> entityType, Level level) {
         super(entityType, level);
@@ -54,12 +52,12 @@ public class DoTVillager extends AgeableMob {
     }
 
     private void preConstructionInit() {
-        this.setPersistenceRequired();
     }
 
-    public void postConstructionInit() {
+    public void onFinalizeSpawnEvent() {
         setCulture(DoTVillagerCulture.byBiome(getLevel().getBiome(blockPosition())));
         setProfession(DoTVillagerProfession.STONEMASON);
+        setPersistenceRequired();
     }
 
     protected void defineSynchedData() {
@@ -87,9 +85,10 @@ public class DoTVillager extends AgeableMob {
         super.readAdditionalSaveData(tag);
         this.entityData.set(DATA_CULTURE, tag.getByte("Culture"));
         this.entityData.set(DATA_PROFESSION, tag.getByte("Profession"));
-        if (!getLevel().isClientSide()) {
-            if (tag.contains("Workorder")) {
-                this.workOrder = new BuildStructureWorkOrder((ServerLevel)getLevel(), tag);
+        if (!getLevel().isClientSide() && tag.contains("AdminOrder")) {
+            CompoundTag orderTag = tag.getCompound("AdminOrder");
+            switch (orderTag.getString("OrderType")) {
+                case "Build" -> this.adminOrder = new AdminOrder.BuildOrder(BuildingSitesManager.get((ServerLevel)getLevel()).getSiteByName(orderTag.getString("BuildingSite")));
             }
         }
     }
@@ -98,8 +97,8 @@ public class DoTVillager extends AgeableMob {
         super.addAdditionalSaveData(tag);
         tag.putByte("Culture", this.entityData.get(DATA_CULTURE));
         tag.putByte("Profession", this.entityData.get(DATA_PROFESSION));
-        if (this.workOrder != null && (this.workOrder instanceof  BuildStructureWorkOrder order)) {
-            order.save(tag);
+        if (!getLevel().isClientSide() && this.hasAdminOrder()) {
+            this.adminOrder.save(tag);
         }
     }
 
@@ -229,9 +228,9 @@ public class DoTVillager extends AgeableMob {
 
     public String getCurrentActionDescription() {return this.currentActionDescription;}
 
-    public WorkOrder getWorkOrder() {return this.workOrder;}
+    public AdminOrder getAdminOrder() {return this.adminOrder;}
 
-    public boolean hasWorkOrder() {return this.workOrder != null;}
+    public boolean hasAdminOrder() {return this.adminOrder != null;}
 
-    public void setWorkOrder(WorkOrder workOrder) {this.workOrder = workOrder;}
+    public void setAdminOrder(AdminOrder adminOrder) {this.adminOrder = adminOrder;}
 }
