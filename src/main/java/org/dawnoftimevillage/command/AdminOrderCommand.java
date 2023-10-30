@@ -9,13 +9,16 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import org.dawnoftimevillage.world.buildingsite.BuildingSite;
-import org.dawnoftimevillage.world.buildingsite.BuildingSitesManager;
-import org.dawnoftimevillage.world.entity.AdminOrder;
-import org.dawnoftimevillage.world.entity.DoTVillager;
+import org.dawnoftimevillage.construction.project.FreshBuildingProject;
+import org.dawnoftimevillage.construction.project.ConstructionProjectManager;
+import org.dawnoftimevillage.entity.AdminOrder;
+import org.dawnoftimevillage.entity.DotVillager;
 
 import java.util.List;
 
+/**
+ * Admin command used to order a villager to do something
+ */
 public class AdminOrderCommand {
     // ORDER A VILLAGER TO DO SOMETHING : /dot order give <villager> <order> <parameters>
     //                          EXAMPLE : /dot order give @e[type=dawnoftimevillage:villager,limit=1] buildstructure mybuildingsite
@@ -32,14 +35,14 @@ public class AdminOrderCommand {
     }
 
     private static List<String> getExistentSitesNames(CommandSourceStack stack) {
-        BuildingSitesManager manager = BuildingSitesManager.get(stack.getLevel());
-        return manager.getExistentSitesNames();
+        ConstructionProjectManager manager = ConstructionProjectManager.get(stack.getLevel());
+        return manager.getExistentProjectsNames();
     }
 
     private static int stopOrder(CommandSourceStack source, Entity entity) {
-        if (entity instanceof DoTVillager villager) {
+        if (entity instanceof DotVillager villager) {
                 villager.setAdminOrder(new AdminOrder.StopOrder());
-                source.sendSuccess(Component.literal("Successfully ordered villager to stop"), true);
+                source.sendSuccess(() -> Component.literal("Successfully ordered villager to stop"), true);
         } else {
             source.sendFailure(Component.literal("Entity has to be a dawn of time villager"));
         }
@@ -47,10 +50,11 @@ public class AdminOrderCommand {
     }
 
     private static int giveBuildStructureOrder(CommandSourceStack source, Entity builder, String name) {
-        if (builder instanceof DoTVillager villager) {
+        /*
+        if (builder instanceof DotVillager villager) {
             ServerLevel level = source.getLevel();
-            BuildingSitesManager manager = BuildingSitesManager.get(level);
-            BuildingSite site = manager.getSiteByName(name);
+            ConstructionProjectManager manager = ConstructionProjectManager.get(level);
+            FreshBuildingProject site = manager.getProjectByName(name);
             if (site != null) {
                 villager.setAdminOrder(new AdminOrder.BuildOrder(site));
 
@@ -61,6 +65,8 @@ public class AdminOrderCommand {
         } else {
             source.sendFailure(Component.literal("Builder entity has to be a dawn of time villager"));
         }
+
+         */
         return 1;
     }
 }
