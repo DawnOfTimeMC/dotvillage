@@ -26,13 +26,10 @@ import net.minecraft.world.entity.monster.Witch;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.dawnoftimevillage.building.Building;
-import org.dawnoftimevillage.construction.project.ConstructionProjectManager;
 import org.dawnoftimevillage.registry.DotvEntities;
 import org.dawnoftimevillage.trade.TraderData;
 import org.dawnoftimevillage.village.Village;
 import org.slf4j.Logger;
-
-import java.awt.*;
 
 public class DotVillager extends AgeableMob {
     private static final Logger LOGGER = LogUtils.getLogger();

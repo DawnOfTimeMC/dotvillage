@@ -3,10 +3,7 @@ package org.dawnoftimevillage.command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import org.dawnoftimevillage.construction.project.ConstructionProjectManager;
-import org.dawnoftimevillage.construction.project.FreshBuildingProject;
 import org.dawnoftimevillage.village.Village;
 import org.dawnoftimevillage.village.VillageManager;
 
@@ -24,7 +21,7 @@ public class ListVillagesCommand {
             if (villages.size() > 0) {
                 source.sendSuccess(() -> Component.literal("Villages founded "), false);
                 for (Village village : villages) {
-                    String villageInfo = village.getName() + ", position : [" + village.getPosition().getX() + " " + village.getPosition().getY() + " " + village.getPosition().getZ();
+                    String villageInfo = village.getName() + ", position : [" + village.getCenterPosition().getX() + " " + village.getCenterPosition().getY() + " " + village.getCenterPosition().getZ();
                     source.sendSuccess(() -> Component.literal(villageInfo), false);
                 }
             } else {

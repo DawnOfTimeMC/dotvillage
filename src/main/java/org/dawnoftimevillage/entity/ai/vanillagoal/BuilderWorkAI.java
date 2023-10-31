@@ -1,22 +1,17 @@
 package org.dawnoftimevillage.entity.ai.vanillagoal;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
+import org.dawnoftimevillage.command.BuildingProjectCommand;
 import org.dawnoftimevillage.construction.project.ConstructionProject;
 import org.dawnoftimevillage.construction.project.ConstructionProjectManager;
-import org.dawnoftimevillage.command.BuildingProjectCommand;
 import org.dawnoftimevillage.entity.AdminOrder;
 import org.dawnoftimevillage.entity.DotVillager;
 import org.dawnoftimevillage.entity.ai.systems.statemachine.State;

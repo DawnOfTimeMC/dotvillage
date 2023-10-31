@@ -1,0 +1,12 @@
+{
+  "production": [
+    {
+      "name": "minecraft:cod",
+      "amount": 6
+    },
+    {
+      "name": "minecraft:salmon",
+      "amount": 3
+    }
+  ]
+}

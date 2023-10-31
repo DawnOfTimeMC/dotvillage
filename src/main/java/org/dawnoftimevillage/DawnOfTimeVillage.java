@@ -3,8 +3,6 @@ package org.dawnoftimevillage;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.dawnoftimevillage.event.DotvClientHandler;
 import org.dawnoftimevillage.event.DotvServerHandler;
 import org.dawnoftimevillage.registry.DotvEntities;

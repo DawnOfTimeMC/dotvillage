@@ -4,8 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import org.dawnoftimevillage.culture.Culture;
-import org.dawnoftimevillage.util.DotvLogger;
-import org.dawnoftimevillage.util.DotvUtils;
 
 import java.util.List;
 
@@ -72,7 +70,7 @@ public class VillageManager {
                 int times = 0;
                 for (Village village : savedData.getVillages()) {
                     //DotvLogger.info(String.valueOf(times));
-                    village.tick();
+                    village.updateActive();
                     ++times;
                 }
             }

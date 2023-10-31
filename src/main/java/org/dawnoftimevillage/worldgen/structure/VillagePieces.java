@@ -19,10 +19,8 @@ import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSeriali
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
-import org.dawnoftimevillage.culture.Culture;
 import org.dawnoftimevillage.registry.DotvStructures;
 import org.dawnoftimevillage.util.DotvUtils;
-import org.dawnoftimevillage.village.VillageManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;

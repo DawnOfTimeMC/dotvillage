@@ -1,9 +1,6 @@
 package org.dawnoftimevillage.event;
 
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
@@ -17,10 +14,10 @@ import org.dawnoftimevillage.entity.DotVillager;
 import org.dawnoftimevillage.registry.DotvCommands;
 import org.dawnoftimevillage.registry.DotvEntities;
 import org.dawnoftimevillage.util.DotvLogger;
-import org.dawnoftimevillage.util.DotvUtils;
+import org.dawnoftimevillage.village.Village;
 import org.dawnoftimevillage.village.VillageManager;
-import org.dawnoftimevillage.village.capability.IVillageList;
-import org.dawnoftimevillage.village.capability.VillageListProvider;
+
+import java.util.List;
 
 @Mod.EventBusSubscriber(modid = DawnOfTimeVillage.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class DotvServerHandler {
@@ -34,7 +31,15 @@ public class DotvServerHandler {
 
     @SubscribeEvent
     public static void onChunkUnloaded(ChunkEvent.Unload event) {
-        // see if we need to unload village
+        if (event.getLevel() instanceof ServerLevel level) {
+            List<Village> villages = VillageManager.getVillageList(level);
+            if (villages != null) {
+                for (Village village : villages) {
+                    level.getChunk(village.getCenterPosition());
+                }
+            }
+
+        }
     }
 
     @SubscribeEvent
