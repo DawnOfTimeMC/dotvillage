@@ -4,13 +4,13 @@ import net.minecraft.world.entity.player.Player;
 
 public class TradingHandler {
     /** Trader object which is trading with the player. Could be an NPC, a block, a book...**/
-    private TraderData trader;
+    private TraderComponent trader;
     /** Player which is trading **/
     private Player tradingPlayer;
     private boolean trading;
     private TraderDeals traderDeals;
 
-    public TradingHandler(TraderData trader) {
+    public TradingHandler(TraderComponent trader) {
         this.trader = trader;
     }
 

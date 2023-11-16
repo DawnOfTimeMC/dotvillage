@@ -14,6 +14,8 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.*;
 import net.minecraft.world.level.levelgen.structure.pieces.PiecesContainer;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePiecesBuilder;
+import org.dawnoftimevillage.building.Building;
+import org.dawnoftimevillage.culture.BuildingType;
 import org.dawnoftimevillage.registry.DotvStructures;
 import org.dawnoftimevillage.util.DotvLogger;
 import org.dawnoftimevillage.village.Village;
@@ -42,21 +44,23 @@ public class VillageStructure extends Structure {
         super.afterPlace(pLevel, pStructureManager, pChunkGenerator, pRandom, pBoundingBox, pChunkPos, pPieces);
     }
 
-
     private void createVillage(ServerLevel level, PiecesContainer piecesContainer) {
-        if (!addedVillage) {
-            var pieces = piecesContainer.pieces();
-            for (StructurePiece piece1 : pieces) {
-                if (piece1 instanceof TemplateStructurePiece piece) {
+        if (!this.addedVillage) {
+            DotvLogger.info("Adding a new village");
+            Village village = VillageManager.addVillage(level.getLevel(), this.position, new org.dawnoftimevillage.culture.Culture("dummy"));
 
+            // Adding building information to the Village class
+            if (village != null) {
+                var pieces = piecesContainer.pieces();
+                for (StructurePiece piece : pieces) {
+                    if (piece instanceof VillagePieces.VillagePiece buildingPiece) {
+                        BuildingType buildingType = buildingPiece.getBuildingType();
+                        Building building = Building.create(buildingType);
+                        village.addBuilding(building);
+                    }
                 }
             }
-
-            DotvLogger.info("added village");
-            Village village = VillageManager.addVillage(level.getLevel(), this.position, new org.dawnoftimevillage.culture.Culture());
-
-            //VillageSavedData.get(pLevel.getLevel()).setDirty();
-            addedVillage = true;
+            this.addedVillage = true;
         }
     }
 

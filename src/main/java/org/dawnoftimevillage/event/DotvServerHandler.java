@@ -1,6 +1,8 @@
 package org.dawnoftimevillage.event;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
@@ -10,6 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.dawnoftimevillage.DawnOfTimeVillage;
+import org.dawnoftimevillage.culture.CultureManager;
 import org.dawnoftimevillage.entity.DotVillager;
 import org.dawnoftimevillage.registry.DotvCommands;
 import org.dawnoftimevillage.registry.DotvEntities;
@@ -30,6 +33,20 @@ public class DotvServerHandler {
     }
 
     @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (!event.player.level().isClientSide()) {
+            List<Village> villages = VillageManager.getVillageList((ServerLevel)event.player.level());
+            for (Village village : villages) {
+                BlockPos villagePos = village.getCenterPosition();
+                BlockPos playerPos = event.player.blockPosition();
+                if (playerPos.closerThan(villagePos, 100D)) {
+                    village.setActive();
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
     public static void onChunkUnloaded(ChunkEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
             List<Village> villages = VillageManager.getVillageList(level);
@@ -43,6 +60,11 @@ public class DotvServerHandler {
     }
 
     @SubscribeEvent
+    public static void addReloadListener(AddReloadListenerEvent event) {
+        event.addListener(CultureManager.instance());
+    }
+
+    @SubscribeEvent
     public static void onServerLevelTick(TickEvent.LevelTickEvent event) {
         if (event.level instanceof ServerLevel serverLevel) {
             VillageManager.tickVillages((serverLevel));
@@ -51,31 +73,13 @@ public class DotvServerHandler {
 
     /*
     @SubscribeEvent
-    public static void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.register(IVillageList.class);
-    }
-
-     */
-
-    /*
-    @SubscribeEvent
-    public static void attachEntityCapabilities(AttachCapabilitiesEvent<Entity> event) {
+    public static <Entity> void attachEntityCapabilities(AttachCapabilitiesEvent<Entity> event) {
         if (event.getObject() instanceof Player player) {
             if (player.getCapability(PlayerKnowledgeProvider.PLAYER_KNOWLEDGE).isPresent()) {
                 event.addCapability(DotvUtils.resource("properties"), new PlayerKnowledgeProvider());
             }
         }
-    }
-     */
-
-    /*
-    @SubscribeEvent
-    public static void attachLevelCapabilities(AttachCapabilitiesEvent<Level> event) {
-        event.addCapability(DotvUtils.resource("villagelist"), new VillageListProvider());
-
-    }
-
-     */
+    } */
 
     @SubscribeEvent
     public static void registerCommands(RegisterCommandsEvent event) {

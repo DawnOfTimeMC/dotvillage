@@ -27,7 +27,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.dawnoftimevillage.building.Building;
 import org.dawnoftimevillage.registry.DotvEntities;
-import org.dawnoftimevillage.trade.TraderData;
+import org.dawnoftimevillage.trade.TraderComponent;
 import org.dawnoftimevillage.village.Village;
 import org.slf4j.Logger;
 
@@ -37,7 +37,7 @@ public class DotVillager extends AgeableMob {
     private static final EntityDataAccessor<Boolean> DATA_READING = SynchedEntityData.defineId(DotVillager.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Byte> DATA_CULTURE = SynchedEntityData.defineId(DotVillager.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_PROFESSION = SynchedEntityData.defineId(DotVillager.class, EntityDataSerializers.BYTE);
-    private TraderData traderData;
+    private TraderComponent traderData;
     private Village village;
     private Building house;
     private Player lastInteractingPlayer;
@@ -49,7 +49,17 @@ public class DotVillager extends AgeableMob {
         preConstructionInit();
     }
 
+    @Override
+    public boolean save(CompoundTag pCompound) {
+        return super.save(pCompound);
+    }
+
     private void preConstructionInit() {
+    }
+
+    @Override
+    public boolean canChangeDimensions() {
+        return false;
     }
 
     public void onFinalizeSpawnEvent() {

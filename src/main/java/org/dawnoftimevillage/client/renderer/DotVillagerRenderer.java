@@ -17,7 +17,7 @@ import org.dawnoftimevillage.util.DotvUtils;
 
 @OnlyIn(Dist.CLIENT)
 public class DotVillagerRenderer extends HumanoidMobRenderer<DotVillager, DotVillagerModel<DotVillager>> {
-    private static final ResourceLocation DOT_VILLAGER_NAKED_SKIN = DotvUtils.resource("textures/entity/dot_villager/dot_villager_base.png");
+    private static final ResourceLocation DOT_VILLAGER_NAKED_SKIN = DotvUtils.resource("textures/entity/dot_villager/base_skin.png");
 
     public DotVillagerRenderer(EntityRendererProvider.Context context) {
         super(context, new DotVillagerModel<>(context.bakeLayer(DotVillagerModel.LAYER_LOCATION)), 0.5F);

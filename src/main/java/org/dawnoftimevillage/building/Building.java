@@ -1,14 +1,19 @@
 package org.dawnoftimevillage.building;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import org.dawnoftimevillage.construction.BuildingPlacementSettings;
 import org.dawnoftimevillage.construction.project.FreshBuildingProject;
+import org.dawnoftimevillage.culture.BuildingType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A building instance.<br>
@@ -16,6 +21,7 @@ import java.util.List;
  * @see FreshBuildingProject
  */
 public class Building {
+    private BuildingType buildingType;
     private ResourceLocation structurePath;
     private BuildingPlacementSettings placementSettings;
     private BlockPos position;
@@ -23,7 +29,21 @@ public class Building {
     private List<BlockPos> sleepPositions = new ArrayList<>();
     private List<BlockPos> workPositions = new ArrayList<>();
 
-    private HashMap<Item, Integer> production = new HashMap<>();
+    private Building(BuildingType buildingType) {
+        this.buildingType = buildingType;
+    }
+
+    public static Building create(BuildingType buildingType) {
+        return new Building(buildingType);
+    }
+
+    public static Building loadBuilding() {
+        return null;
+    }
+
+    public void saveNBT(CompoundTag tag) {
+
+    }
 
     public BlockPos getPosition() {
         return position;
@@ -34,6 +54,6 @@ public class Building {
     }
 
     public HashMap<Item, Integer> getProduction() {
-        return this.production;
+        return this.buildingType.getProduction();
     }
 }

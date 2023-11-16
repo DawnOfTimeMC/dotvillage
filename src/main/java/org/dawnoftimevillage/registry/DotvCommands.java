@@ -7,11 +7,13 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import org.dawnoftimevillage.command.AdminOrderCommand;
 import org.dawnoftimevillage.command.BuildingProjectCommand;
+import org.dawnoftimevillage.command.ListCulturesCommand;
 import org.dawnoftimevillage.command.ListVillagesCommand;
 
 public class DotvCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal("dawnoftime")
+                .then(ListCulturesCommand.register())
                 .then(ListVillagesCommand.register())
                 .then(BuildingProjectCommand.register())
                 .then(AdminOrderCommand.register());

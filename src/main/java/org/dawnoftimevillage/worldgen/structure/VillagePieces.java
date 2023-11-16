@@ -19,6 +19,8 @@ import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSeriali
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+import org.dawnoftimevillage.culture.BuildingType;
+import org.dawnoftimevillage.culture.HardCodedBuildingTypes;
 import org.dawnoftimevillage.registry.DotvStructures;
 import org.dawnoftimevillage.util.DotvUtils;
 
@@ -84,7 +86,16 @@ public class VillagePieces {
                 }
             }
             if (!collision) {
-                pieces.addPiece(new VillagePieces.VillagePiece(manager, building, randomPos, rotation));
+                BuildingType buildingType;
+                if (building.getPath().equals("village/plains/starterpack/golden_lumberjack")) {
+                    buildingType = HardCodedBuildingTypes.LUMBERJACK;
+                } else if (building.getPath().equals("village/plains/starterpack/golden_sheep_farm")) {
+                    buildingType = HardCodedBuildingTypes.SHEEP_FARM;
+                } else {
+                    buildingType = HardCodedBuildingTypes.STANDARD_TYPE;
+                }
+
+                pieces.addPiece(new VillagePieces.VillagePiece(manager, building, randomPos, rotation, buildingType));
                 buildingsBoundingBoxes.add(buildingBoundingBox);
             }
         }
@@ -110,8 +121,11 @@ public class VillagePieces {
     }
 
     public static class VillagePiece extends TemplateStructurePiece {
-        public VillagePiece(StructureTemplateManager manager, ResourceLocation resourceLocation, BlockPos pos, Rotation rotation) {
+        private BuildingType buildingType;
+
+        public VillagePiece(StructureTemplateManager manager, ResourceLocation resourceLocation, BlockPos pos, Rotation rotation, BuildingType buildingType) {
             super(DotvStructures.VILLAGE_PIECE.get(), 0, manager, resourceLocation, resourceLocation.toString(), makeSettings(rotation), pos);
+            this.buildingType = buildingType;
         }
 
         public VillagePiece(StructureTemplateManager manager, CompoundTag tag) {
@@ -128,6 +142,10 @@ public class VillagePieces {
         }
 
         protected void handleDataMarker(String pName, BlockPos pPos, ServerLevelAccessor pLevel, RandomSource pRandom, BoundingBox pBox) {
+        }
+
+        public BuildingType getBuildingType() {
+            return this.buildingType;
         }
 
         public void postProcess(WorldGenLevel pLevel, StructureManager pStructureManager, ChunkGenerator pGenerator, RandomSource pRandom, BoundingBox pBox, ChunkPos pChunkPos, BlockPos pPos) {
