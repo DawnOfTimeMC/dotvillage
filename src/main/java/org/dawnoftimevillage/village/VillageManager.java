@@ -47,13 +47,7 @@ public class VillageManager {
                 DotvLogger.info(villages.size() + " village(s) to tick");
                 for (Village village : villages) {
                     DotvLogger.info("Ticking village \""+village.getName() + "\"");
-                    if (village.isActive()) {
-                        DotvLogger.info("Village is active");
-                        village.activeVillageTick();
-                    } else {
-                        DotvLogger.info("Village is inactive");
-                        village.inactiveVillageTick();
-                    }
+                    village.tick();
                 }
             }
         }

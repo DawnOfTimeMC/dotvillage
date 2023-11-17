@@ -1,16 +1,17 @@
 package org.dawnoftimevillage.village;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.bossevents.CustomBossEvent;
+import net.minecraft.server.bossevents.CustomBossEvents;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
@@ -22,12 +23,9 @@ import org.dawnoftimevillage.building.Building;
 import org.dawnoftimevillage.construction.project.ConstructionProject;
 import org.dawnoftimevillage.culture.Culture;
 import org.dawnoftimevillage.entity.DotVillager;
-import org.dawnoftimevillage.util.DotvLogger;
+import org.dawnoftimevillage.util.DotvUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Village {
     private final UUID uuid;
@@ -39,7 +37,6 @@ public class Village {
     private final BlockPos centerPosition;
     private final Level level;
     private final VillageInventory inventory;
-    //private Status status = Status.INACTIVE;
     private long momentBecameInactive;
     private long lastProductionHarvest;
     public static final long HARVESTS_INTERVAL = 24000L;
@@ -47,6 +44,9 @@ public class Village {
     private ChunkPos southWestCorner;
     private ChunkPos northEastCorner;
     private boolean active;
+    private static int ACTIVE_AREA_RADIUS = 80;
+    private CustomBossEvent villageXpBar;
+    private List<Player> visitors;
 
     private Village(UUID uuid, Level level, List<Building> buildings, List<ConstructionProject> constructionProjects, List<UUID> villagers, Culture culture, String name, BlockPos position, VillageInventory inventory) {
         this.uuid = uuid;
@@ -58,6 +58,7 @@ public class Village {
         this.name = name;
         this.centerPosition = position;
         this.inventory = inventory;
+        createOrLoadXpBar();
     }
 
     static Village create(Level level, BlockPos position) {
@@ -65,7 +66,7 @@ public class Village {
         List<ConstructionProject> constructionProjects = new ArrayList<>();
         List<UUID> villagers = new ArrayList<>();
         Culture culture = new Culture("dummy");
-        String name = "village " + RandomSource.create().nextInt(0,100);
+        String name = "village_" + RandomSource.create().nextInt(0,100);
         VillageInventory inventory = new VillageInventory();
 
         return new Village(Mth.createInsecureUUID(RandomSource.create()), level, buildings, constructionProjects, villagers, culture, name, position, inventory);
@@ -100,6 +101,18 @@ public class Village {
         return new Village(uuid, level, buildings, constructionProjects, villagers, culture, name, position, inventory);
     }
 
+    private void createOrLoadXpBar() {
+        CustomBossEvents customBossEvents = this.level.getServer().getCustomBossEvents();
+        String barID = getName() + "_bar";
+        if (customBossEvents.get(DotvUtils.resource(barID)) == null) {
+            Component barText = Component.literal("Lutèce - Age II (Xp 150/1000)").withStyle(ChatFormatting.WHITE);
+            this.villageXpBar = customBossEvents.create(DotvUtils.resource(barID), barText);
+            this.villageXpBar.setColor(BossEvent.BossBarColor.WHITE);
+        } else {
+            this.villageXpBar = customBossEvents.get(DotvUtils.resource(barID));
+        }
+    }
+
     public void saveNBT(CompoundTag tag) {
         tag.putString("Name", this.name);
         tag.put("Position", NbtUtils.writeBlockPos(this.centerPosition));
@@ -121,31 +134,12 @@ public class Village {
         this.buildings.add(building);
     }
 
-    public void setActive() {
-        //this.status = Status.ACTIVE;
-        this.active = true;
-        updateAfterInactivity();
-    }
-
     private void updateAfterInactivity() {
         long currentTime = this.level.getGameTime();
         // Move villagers
         // Update constructions
         // Collect building production;
         maybeCollectProduction();
-    }
-
-    public void setInactive() {
-        //this.status = Status.INACTIVE;
-        this.active = false;
-        this.momentBecameInactive = this.level.getGameTime();
-    }
-
-    private void collectProduction() {
-        for (Building building : this.buildings) {
-            HashMap<Item, Integer> production = building.getProduction();
-            production.forEach(this.inventory::add);
-        }
     }
 
     private void maybeCollectProduction() {
@@ -157,6 +151,13 @@ public class Village {
                 collectProduction();
             }
             this.lastProductionHarvest = this.level.getGameTime();
+        }
+    }
+
+    private void collectProduction() {
+        for (Building building : this.buildings) {
+            HashMap<Item, Integer> production = building.getProduction();
+            production.forEach(this.inventory::add);
         }
     }
 
@@ -175,40 +176,74 @@ public class Village {
         }
     }
 
-    public void activeVillageTick() {
-        this.level.getServer().getPlayerList().broadcastSystemMessage(Component.literal("Ticking \"" + getName() + "\" in ACTIVE mode"), true);
-        maybeCollectProduction();
-        handleUnloadedVillagers();
-        tryUpdateStatus();
-    }
-
-    public void inactiveVillageTick() {
-        this.level.getServer().getPlayerList().broadcastSystemMessage(Component.literal("Ticking \"" + getName() + "\" in INACTIVE mode"), true);
-        tryUpdateStatus();
-    }
-
-    public void tryUpdateStatus() {
-        // Searching for nearby players. Village will become inactive if no players around
-        List<Player> nearbyPlayers = this.level.getNearbyPlayers(TargetingConditions.forNonCombat(), null, AABB.ofSize(this.centerPosition.getCenter(), 200, 200, 200));
-        /*
-        List<ServerPlayer> players = this.level.getServer().getPlayerList().getPlayers();
-        ServerPlayer dev = null;
-        if (!players.isEmpty()) {
-            dev = players.get(0);
-        }
-        if (dev != null) {
-            dev.sendSystemMessage(Component.literal("Distance to village : " + dev.distanceToSqr(this.centerPosition.getCenter())));
-        } */
+    public void tick() {
+        updateVisitors();
+        updateStatus();
 
         if (this.active) {
-            if (nearbyPlayers.isEmpty()) {
-                setInactive();
+            //this.level.getServer().getPlayerList().broadcastSystemMessage(Component.literal("Ticking \"" + getName() + "\" in ACTIVE mode"), true);
+            maybeCollectProduction();
+            handleUnloadedVillagers();
+        }
+    }
+
+    private void updateVisitors() {
+        List<Player> oldPlayers = this.visitors;
+        List<Player> newPlayers = this.level.getNearbyPlayers(TargetingConditions.forNonCombat(), null, AABB.ofSize(centerPosition.getCenter(), 160, 160, 160));
+
+        List<Player> arrivingPlayers = new ArrayList<>();
+        List<Player> leavingPlayers = new ArrayList<>();
+
+        if (oldPlayers != null) {
+            for (Player player : oldPlayers) {
+                if (!newPlayers.contains(player)) {
+                    leavingPlayers.add(player);
+                }
             }
-        } else {
-            if (!nearbyPlayers.isEmpty()) {
-                setActive();
+            leavingPlayers.forEach(this::onPlayerLeavesVillage);
+        }
+
+        for (Player player : newPlayers) {
+            if (!oldPlayers.contains(player)) {
+                arrivingPlayers.add(player);
             }
         }
+        arrivingPlayers.forEach(this::onPlayerEntersVillage);
+
+        this.visitors = newPlayers;
+    }
+
+    private void onPlayerEntersVillage(Player player) {
+        // Player has already been added the village player list
+        Component component = Component.literal("Entering " + getName()).withStyle(ChatFormatting.YELLOW);
+        player.displayClientMessage(component, true);
+        this.villageXpBar.addPlayer(this.level.getServer().getPlayerList().getPlayer(player.getUUID()));
+    }
+
+    private void onPlayerLeavesVillage(Player player) {
+        // Player has already been removed from the village player list
+        Component component = Component.literal("Leaving " + getName()).withStyle(ChatFormatting.YELLOW);
+        player.displayClientMessage(component, true);
+        this.villageXpBar.removePlayer(this.level.getServer().getPlayerList().getPlayer(player.getUUID()));
+    }
+
+    public void updateStatus() {
+        boolean hasVisitors = !this.visitors.isEmpty();
+        if (this.active && !hasVisitors) {
+            setInactive();
+        } else if (!this.active && hasVisitors) {
+            setActive();
+        }
+    }
+
+    public void setActive() {
+        this.active = true;
+        updateAfterInactivity();
+    }
+
+    public void setInactive() {
+        this.active = false;
+        this.momentBecameInactive = this.level.getGameTime();
     }
 
     public boolean isActive() {
@@ -222,8 +257,4 @@ public class Village {
     public BlockPos getCenterPosition() {
         return this.centerPosition;
     }
-
-    /* public enum Status {
-        ACTIVE, INACTIVE
-    } */
 }
