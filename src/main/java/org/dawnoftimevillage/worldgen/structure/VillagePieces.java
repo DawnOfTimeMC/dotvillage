@@ -103,8 +103,8 @@ public class VillagePieces {
 
     private static List<ResourceLocation> getStarterPack(VillageStructure.Culture culture) {
         return switch (culture) {
-            case PLAINS -> Arrays.asList(PLAINS_STARTER_PACK);
-            case TAIGA -> Arrays.asList(TAIGA_STARTER_PACK);
+            case PLAINS -> Arrays.asList(VANILLA_BUILDINGS_STARTER_PACK);
+            case TAIGA -> Arrays.asList(VANILLA_BUILDINGS_STARTER_PACK);
         };
     }
 

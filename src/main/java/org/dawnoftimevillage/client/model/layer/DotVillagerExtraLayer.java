@@ -31,7 +31,7 @@ public class DotVillagerExtraLayer<T extends DotVillager, M extends DotVillagerM
 
     private void renderCultureClothes(M model, PoseStack poseStack, MultiBufferSource buffer, int packedLight, T villager) {
         DotVillagerCulture culture = villager.getCulture();
-        String path = "textures/entity/dot_villager/culture/dot_villager_" + culture.toString() + ".png";
+        String path = "textures/entity/villager/culture_clothes/" + culture.toString() + ".png";
         ResourceLocation resourceLocation = DotvUtils.resource(path);
         renderColoredCutoutModel(model, resourceLocation, poseStack, buffer, packedLight, villager, 1.0F, 1.0F, 1.0F);
     }
@@ -39,7 +39,7 @@ public class DotVillagerExtraLayer<T extends DotVillager, M extends DotVillagerM
     private void renderProfessionClothes(M model, PoseStack poseStack, MultiBufferSource buffer, int packedLight, T villager) {
         DotVillagerProfession profession = villager.getProfession();
         if (profession != DotVillagerProfession.UNEMPLOYED) {
-            String path = "textures/entity/dot_villager/profession/dot_villager_" + profession.toString() + ".png";
+            String path = "textures/entity/villager/profession/" + profession.toString() + ".png";
             ResourceLocation resourceLocation = DotvUtils.resource(path);
             renderColoredCutoutModel(model, resourceLocation, poseStack, buffer, packedLight, villager, 1.0F, 1.0F, 1.0F);
         }

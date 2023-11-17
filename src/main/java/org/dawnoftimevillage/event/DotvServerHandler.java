@@ -32,6 +32,7 @@ public class DotvServerHandler {
         }); */
     }
 
+    /*
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (!event.player.level().isClientSide()) {
@@ -44,8 +45,9 @@ public class DotvServerHandler {
                 }
             }
         }
-    }
+    } */
 
+    /*
     @SubscribeEvent
     public static void onChunkUnloaded(ChunkEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
@@ -57,7 +59,7 @@ public class DotvServerHandler {
             }
 
         }
-    }
+    } */
 
     @SubscribeEvent
     public static void addReloadListener(AddReloadListenerEvent event) {
@@ -66,8 +68,9 @@ public class DotvServerHandler {
 
     @SubscribeEvent
     public static void onServerLevelTick(TickEvent.LevelTickEvent event) {
-        if (event.level instanceof ServerLevel serverLevel) {
-            VillageManager.tickVillages((serverLevel));
+        if (!event.level.isClientSide() && event.phase.equals(TickEvent.Phase.END)) {
+            //DotvLogger.info("Tick n°" + event.level.getServer().getTickCount() + " on" + event.level.dimension());
+            VillageManager.tickVillages((ServerLevel) event.level);
         }
     }
 

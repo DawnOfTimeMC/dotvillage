@@ -47,7 +47,7 @@ public class VillageStructure extends Structure {
     private void createVillage(ServerLevel level, PiecesContainer piecesContainer) {
         if (!this.addedVillage) {
             DotvLogger.info("Adding a new village");
-            Village village = VillageManager.addVillage(level.getLevel(), this.position, new org.dawnoftimevillage.culture.Culture("dummy"));
+            Village village = VillageManager.addVillage(level, this.position, new org.dawnoftimevillage.culture.Culture("dummy"));
 
             // Adding building information to the Village class
             if (village != null) {

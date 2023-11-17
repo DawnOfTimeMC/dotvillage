@@ -41,23 +41,18 @@ public class VillageSavedData extends SavedData {
 
     public CompoundTag save(CompoundTag tag) {
         ListTag villagesTag = new ListTag();
-        DotvLogger.info("before for");
         for (Village village : this.villages) {
-            DotvLogger.info("inside save");
             CompoundTag villageTag = new CompoundTag();
             village.saveNBT(villageTag);
             villagesTag.add(villageTag);
         }
-        DotvLogger.info("after for");
         tag.put("Villages", villagesTag);
         return tag;
     }
 
     public void load(CompoundTag tag) {
-        DotvLogger.info("inside load 1");
         ListTag villagesTag = tag.getList("Villages", 10);
         for(int i = 0; i < villagesTag.size(); ++i) {
-            DotvLogger.info("inside load 2");
             CompoundTag villageTag = villagesTag.getCompound(i);
             loadVillage(villageTag);
         }

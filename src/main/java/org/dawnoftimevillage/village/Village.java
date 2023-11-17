@@ -7,6 +7,8 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -174,22 +176,39 @@ public class Village {
     }
 
     public void activeVillageTick() {
-        DotvLogger.info("Ticking village \"" + this.name + "\"");
-        this.level.getServer().sendSystemMessage(Component.literal("Ticking village in ACTIVE mode"));
+        this.level.getServer().getPlayerList().broadcastSystemMessage(Component.literal("Ticking \"" + getName() + "\" in ACTIVE mode"), true);
         maybeCollectProduction();
         handleUnloadedVillagers();
         tryUpdateStatus();
     }
 
     public void inactiveVillageTick() {
-        this.level.getServer().sendSystemMessage(Component.literal("Ticking village in INACTIVE mode"));
+        this.level.getServer().getPlayerList().broadcastSystemMessage(Component.literal("Ticking \"" + getName() + "\" in INACTIVE mode"), true);
         tryUpdateStatus();
     }
 
     public void tryUpdateStatus() {
         // Searching for nearby players. Village will become inactive if no players around
-        List<Player> nearbyPlayers = this.level.getNearbyPlayers(TargetingConditions.DEFAULT, null, AABB.ofSize(this.centerPosition.getCenter(), 100, 50, 100));
-        this.active = !nearbyPlayers.isEmpty();
+        List<Player> nearbyPlayers = this.level.getNearbyPlayers(TargetingConditions.forNonCombat(), null, AABB.ofSize(this.centerPosition.getCenter(), 200, 200, 200));
+        /*
+        List<ServerPlayer> players = this.level.getServer().getPlayerList().getPlayers();
+        ServerPlayer dev = null;
+        if (!players.isEmpty()) {
+            dev = players.get(0);
+        }
+        if (dev != null) {
+            dev.sendSystemMessage(Component.literal("Distance to village : " + dev.distanceToSqr(this.centerPosition.getCenter())));
+        } */
+
+        if (this.active) {
+            if (nearbyPlayers.isEmpty()) {
+                setInactive();
+            }
+        } else {
+            if (!nearbyPlayers.isEmpty()) {
+                setActive();
+            }
+        }
     }
 
     public boolean isActive() {
