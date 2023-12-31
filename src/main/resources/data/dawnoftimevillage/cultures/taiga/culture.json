@@ -1,6 +1,0 @@
-{
-  "name": "taiga",
-  "temperature": "cold",
-  "building_starterpack": ["fisherman", "small_house", "tannery"],
-  "building_pool" : ["fisherman", "small_house", "tannery", "church", "armorer", "library"]
-}

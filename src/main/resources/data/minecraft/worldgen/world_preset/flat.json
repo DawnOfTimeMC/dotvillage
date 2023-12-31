@@ -25,7 +25,7 @@
           "structure_overrides": [
             "minecraft:strongholds",
             "minecraft:villages",
-            "dawnoftimevillage:dot_villages"
+            "dotvill:villages"
           ]
         }
       }

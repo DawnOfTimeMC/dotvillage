@@ -1,0 +1,7 @@
+{
+  "entity.dotvill.villager": "Villager",
+  "item.dotvill.villager_spawn_egg": "Villager Spawn Egg",
+  "sentence.dotvill.hello": "Welcome to Rochecolombe, dear traveler! It's a pleasure to have you here in our quaint village. Whether you've come from near or far, we're delighted to extend our warmest hospitality to you. Would you like a warm and comforting beverage to help chase away the cold and rejuvenate yourself?",
+  "sentence.dotvill.innkeeperdescription": "Isaac the innkeeper",
+  "creativetab.main_tab": "Dotvill"
+}

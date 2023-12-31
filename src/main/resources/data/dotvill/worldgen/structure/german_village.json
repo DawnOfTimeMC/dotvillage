@@ -1,0 +1,8 @@
+{
+  "type": "dotvill:village_generator",
+  "culture": "german",
+  "biomes": "#dotvill:has_structure/german_village",
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "beard_thin"
+}

@@ -1,8 +1,0 @@
-{
-  "type": "dawnoftimevillage:dot_village",
-  "culture": "plains",
-  "biomes": "#dawnoftimevillage:has_structure/plains_village",
-  "spawn_overrides": {},
-  "step": "surface_structures",
-  "terrain_adaptation": "beard_thin"
-}

@@ -1,0 +1,7 @@
+{
+  "entity.dotvill.villager": "Villageois",
+  "item.dotvill.villager_spawn_egg": "Oeuf d'apparition de Villageois",
+  "sentence.dotvill.hello": "Bienvenue, étranger, en cette humble auberge de Rochecolombe. Tu pourras trouver refuge et réconfort ici. Permets-moi de te servir une boisson chaude pour chasser le froid de la route.",
+  "sentence.dotvill.innkeeperdescription": "Isaac le tarvernier",
+  "creativetab.main_tab": "Dotvill"
+}
